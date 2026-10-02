@@ -3,13 +3,20 @@
 <style>
 html,body{margin:0;height:100%;background:#111;display:flex;align-items:center;justify-content:center}
 /* Native stage is 500x480. Cap the display at 1.5x native; smaller windows shrink it to fit. */
-ruffle-player{--max-scale:1.5;--w:min(96vw, calc(96vh * 500 / 480), calc(500px * var(--max-scale)));
+html{--max-scale:1.5}
+ruffle-player{--w:min(96vw, calc(96vh * 500 / 480), calc(500px * var(--max-scale)));
   display:block;width:var(--w);height:calc(var(--w) * 480 / 500)}
+#fps{position:fixed;top:4px;left:6px;font:12px monospace;color:#8f8}
 </style>
 <script>
 window.RufflePlayer = window.RufflePlayer || {};
-window.RufflePlayer.config = { autoplay: "on", unmuteOverlay: "hidden", logLevel: "info", letterbox: "on", splashScreen: false,
+// Optional tuning via URL, e.g. ?quality=low&renderer=webgl&scale=1&fps=1
+const params = new URLSearchParams(location.search);
+window.RufflePlayer.config = { autoplay: "on", unmuteOverlay: "hidden", logLevel: "error", letterbox: "on", splashScreen: false,
   fontSources: ["fonts/IBMPlexMono-Regular.ttf", "fonts/IBMPlexMono-Bold.ttf"] };
+if (params.get("quality")) window.RufflePlayer.config.quality = params.get("quality");            // low | medium | high | best
+if (params.get("renderer")) window.RufflePlayer.config.preferredRenderer = params.get("renderer"); // webgpu | wgpu-webgl | webgl | canvas
+if (params.get("scale")) document.documentElement.style.setProperty("--max-scale", params.get("scale"));
 </script>
 <script src="ruffle/ruffle.js"></script>
 </head><body>
@@ -18,5 +25,10 @@ window.RufflePlayer.config = { autoplay: "on", unmuteOverlay: "hidden", logLevel
 const p = window.RufflePlayer.newest().createPlayer();
 document.getElementById("c").appendChild(p);
 p.ruffle().load("GridHack.swf");
+if (params.get("fps")) {  // approximate: page frames/sec; drops when Ruffle frames run long, but caps at the display refresh rate
+  const el = Object.assign(document.createElement("div"), { id: "fps" }); document.body.appendChild(el);
+  let n = 0, t0 = performance.now();
+  (function tick(t) { n++; if (t - t0 >= 1000) { el.textContent = `${Math.round(n * 1000 / (t - t0))} fps`; n = 0; t0 = t; } requestAnimationFrame(tick); })(t0);
+}
 </script>
 </body></html>
