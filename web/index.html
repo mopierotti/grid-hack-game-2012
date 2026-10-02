@@ -1,6 +1,11 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>GridHack (2012 Edition)</title>
-<style>html,body{margin:0;height:100%;background:#111;display:flex;align-items:center;justify-content:center}</style>
+<style>
+html,body{margin:0;height:100%;background:#111;display:flex;align-items:center;justify-content:center}
+/* Native stage is 500x480. Cap the display at 1.5x native; smaller windows shrink it to fit. */
+ruffle-player{--max-scale:1.5;--w:min(96vw, calc(96vh * 500 / 480), calc(500px * var(--max-scale)));
+  display:block;width:var(--w);height:calc(var(--w) * 480 / 500)}
+</style>
 <script>
 window.RufflePlayer = window.RufflePlayer || {};
 window.RufflePlayer.config = { autoplay: "on", unmuteOverlay: "hidden", logLevel: "info", letterbox: "on", splashScreen: false,
@@ -11,7 +16,6 @@ window.RufflePlayer.config = { autoplay: "on", unmuteOverlay: "hidden", logLevel
 <div id="c"></div>
 <script>
 const p = window.RufflePlayer.newest().createPlayer();
-p.style.height="96vh"; p.style.width="100vh"; p.style.maxWidth="100vw";
 document.getElementById("c").appendChild(p);
 p.ruffle().load("GridHack.swf");
 </script>
