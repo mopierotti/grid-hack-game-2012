@@ -8,17 +8,18 @@ html,body{margin:0;height:100%;background:#111;display:flex;align-items:center;j
 </style>
 <script>
 window.RufflePlayer = window.RufflePlayer || {};
-// Optional tuning via URL, e.g. ?quality=high&res=1.5&scale=1.5&renderer=webgl&fps=1
+// Optional tuning via URL, e.g. ?scale=1.5&quality=high&renderer=webgl&fps=1
 const params = new URLSearchParams(location.search);
 window.RufflePlayer.config = { autoplay: "on", unmuteOverlay: "hidden", logLevel: "error", letterbox: "on", splashScreen: false,
   fontSources: ["fonts/IBMPlexMono-Regular.ttf", "fonts/IBMPlexMono-Bold.ttf"] };
 // "low" (no antialiasing) keeps older GPUs near 60 fps during busy moments; override with ?quality=high
 window.RufflePlayer.config.quality = params.get("quality") || "low";                              // low | medium | high | best
 if (params.get("renderer")) window.RufflePlayer.config.preferredRenderer = params.get("renderer"); // webgpu | wgpu-webgl | webgl | canvas
-// Native stage is 500x480. DISPLAY caps the on-screen size; RES caps the size Ruffle actually renders at.
-// Rendering at native size and letting the browser upscale keeps the GPU cost of a 500x480 player.
-const DISPLAY = Number(params.get("scale") || 1.5);
-const RES = Number(params.get("res") || 1);
+// Native stage is 500x480. DISPLAY caps the on-screen size. RES optionally caps the render size below it,
+// with a CSS upscale to fill the gap; on an older MacBook that upscale cost more than it saved, so by
+// default RES matches DISPLAY and there is no transform.
+const DISPLAY = Number(params.get("scale") || 1);  // native size by default: fastest on older machines; ?scale=1.5 for larger
+const RES = Number(params.get("res") || DISPLAY);
 </script>
 <script src="ruffle/ruffle.js"></script>
 </head><body>
@@ -32,7 +33,7 @@ function layout() {
   const r = Math.min(w, 500 * RES);
   box.style.width = `${w}px`; box.style.height = `${w * 480 / 500}px`;
   p.style.width = `${r}px`; p.style.height = `${r * 480 / 500}px`;
-  p.style.transform = `scale(${w / r})`;
+  p.style.transform = r < w ? `scale(${w / r})` : "";
 }
 layout();
 addEventListener("resize", layout);
