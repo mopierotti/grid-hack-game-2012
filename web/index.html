@@ -2,28 +2,40 @@
 <html><head><meta charset="utf-8"><title>GridHack (2012 Edition)</title>
 <style>
 html,body{margin:0;height:100%;background:#111;display:flex;align-items:center;justify-content:center}
-/* Native stage is 500x480. Cap the display at 1.5x native; smaller windows shrink it to fit. */
-html{--max-scale:1.5}
-ruffle-player{--w:min(96vw, calc(96vh * 500 / 480), calc(500px * var(--max-scale)));
-  display:block;width:var(--w);height:calc(var(--w) * 480 / 500)}
+#c{position:relative;overflow:hidden}
+#c ruffle-player{display:block;position:absolute;left:0;top:0;transform-origin:0 0}
 #fps{position:fixed;top:4px;left:6px;font:12px monospace;color:#8f8}
 </style>
 <script>
 window.RufflePlayer = window.RufflePlayer || {};
-// Optional tuning via URL, e.g. ?quality=low&renderer=webgl&scale=1&fps=1
+// Optional tuning via URL, e.g. ?quality=high&res=1.5&scale=1.5&renderer=webgl&fps=1
 const params = new URLSearchParams(location.search);
 window.RufflePlayer.config = { autoplay: "on", unmuteOverlay: "hidden", logLevel: "error", letterbox: "on", splashScreen: false,
   fontSources: ["fonts/IBMPlexMono-Regular.ttf", "fonts/IBMPlexMono-Bold.ttf"] };
-if (params.get("quality")) window.RufflePlayer.config.quality = params.get("quality");            // low | medium | high | best
+// "low" (no antialiasing) keeps older GPUs near 60 fps during busy moments; override with ?quality=high
+window.RufflePlayer.config.quality = params.get("quality") || "low";                              // low | medium | high | best
 if (params.get("renderer")) window.RufflePlayer.config.preferredRenderer = params.get("renderer"); // webgpu | wgpu-webgl | webgl | canvas
-if (params.get("scale")) document.documentElement.style.setProperty("--max-scale", params.get("scale"));
+// Native stage is 500x480. DISPLAY caps the on-screen size; RES caps the size Ruffle actually renders at.
+// Rendering at native size and letting the browser upscale keeps the GPU cost of a 500x480 player.
+const DISPLAY = Number(params.get("scale") || 1.5);
+const RES = Number(params.get("res") || 1);
 </script>
 <script src="ruffle/ruffle.js"></script>
 </head><body>
 <div id="c"></div>
 <script>
 const p = window.RufflePlayer.newest().createPlayer();
-document.getElementById("c").appendChild(p);
+const box = document.getElementById("c");
+box.appendChild(p);
+function layout() {
+  const w = Math.min(innerWidth * 0.96, innerHeight * 0.96 * 500 / 480, 500 * DISPLAY);
+  const r = Math.min(w, 500 * RES);
+  box.style.width = `${w}px`; box.style.height = `${w * 480 / 500}px`;
+  p.style.width = `${r}px`; p.style.height = `${r * 480 / 500}px`;
+  p.style.transform = `scale(${w / r})`;
+}
+layout();
+addEventListener("resize", layout);
 p.ruffle().load("GridHack.swf");
 if (params.get("fps")) {  // approximate: page frames/sec; drops when Ruffle frames run long, but caps at the display refresh rate
   const el = Object.assign(document.createElement("div"), { id: "fps" }); document.body.appendChild(el);
